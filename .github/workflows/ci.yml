@@ -1,0 +1,23 @@
+name: test
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm test
+      - name: Check package contents
+        run: |
+          npm pack --dry-run --ignore-scripts --json > package-contents.json
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import assert from 'node:assert/strict';
+          const [pack] = JSON.parse(readFileSync('package-contents.json', 'utf8'));
+          const expected = ['LICENSE', 'README.md', 'claude-native.mjs', 'collector.mjs', 'estimate.mjs', 'index.mjs', 'package.json', 'page/app.js', 'page/index.html', 'page/style.css'];
+          assert.deepEqual(pack.files.map(file => file.path).sort(), expected.sort());
+          JS
